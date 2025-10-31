@@ -23,7 +23,12 @@ summary(cars)
 You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+library(ggplot2)
+library(tidyverse)
+pressure %>% ggplot(aes(x = temperature, y = pressure))+
+  geom_point()+
+  theme_classic()
+
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
