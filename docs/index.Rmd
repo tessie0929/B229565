@@ -27,7 +27,7 @@ library(ggplot2)
 library(tidyverse)
 pressure %>% ggplot(aes(x = temperature, y = pressure))+
   geom_point()+
-  theme_classic()
+  theme_gray()
 
 ```
 
