@@ -1,16 +1,16 @@
 ---
-title: "Changes in Influenza Antiviral Prescribing in Scotland throughout the COVID-19 Pandemic"
+title: 'Analysis of Mental Health Prescribing Across SIMD Deprivation Quintiles in Scotland (2024)'
 output: html_document
 date: "2025-11-14"
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-## Introduction 
-The COVID-19 pandemic and its associated non-pharmaceutical interventions (NPIs) drastically altered the transmission dynamics of respiratory infections worldwide. Influenza incidence dropped to historically low levels in 2020–2021, largely due to social distancing, mask mandates, and travel restrictions. As normal social activity resumed, influenza activity rebounded in subsequent seasons. 
-Examining national community prescribing of influenza antivirals (oseltamivir, zanamivir) provides a population-level indicator of influenza burden. 
 
-##Library
+## Introduction
+Mental health inequalities are a persistent public health concern in Scotland.
+Socioeconomic deprivation, which measured using the Scottish Index of Multiple Deprivation (SIMD), is well known to correlate with higher prevalence of depression, anxiety, and severe mental illness.
+This analysis examines whether GP-level prescribing of mental health medications reflects socioeconomic inequalities, focusing on all GP practices in Scotland in 2024, and assesses whether prescribing rates differ across SIMD quintiles and whether a clear socioeconomic gradient is observable.
 
 ```{r}
 library(tidyverse)
@@ -22,7 +22,7 @@ library(stringr)
 
 ```{r}
 load_year <- function(year) {
-  months <- sprintf("%02d", 1:12)
+  months <- sprintf("%02d", 1:12) 
   dfs <- vector("list", length(months))
   
   for (i in seq_along(months)) {
@@ -40,124 +40,126 @@ load_year <- function(year) {
   }
   bind_rows(dfs)
 }
-pitc2019_all <- load_year(2019)
-pitc2020_all <- load_year(2020)
-pitc2021_all <- load_year(2021)
-pitc2022_all <- load_year(2022)
-pitc2023_all <- load_year(2023)
-pitc2023_all <- pitc2023_all %>% select(-PrescribedType)
+```
+
+```{r}
 pitc2024_all <- load_year(2024)
+
+GPlist_2024 <- read_csv(here("data","practice_contactdetails_oct2024-open-data.csv"))
+gp_info <- GPlist_2024 %>% 
+  select(PracticeCode, GPPracticeName, Postcode, PracticeListSize) %>% 
+  mutate(
+    Postcode_clean = str_remove_all(Postcode, " ") %>% str_to_upper()
+  )
+
+simd_pc <- read_csv(here("data", "SIMD+2020v2+-+postcode+lookup+-+updated+2025.csv"))
+
+simd_info <- simd_pc %>% 
+  mutate(
+    Postcode_clean = str_remove_all(Postcode, " ") %>% str_to_upper()
+  ) %>% 
+  select(
+    Postcode_clean,
+    SIMD_quintile = SIMD2020_Quintile
+  )
+
+```
+# Join table
+```{r}
+gp_simd <- gp_info %>%
+  left_join(simd_info, join_by("Postcode_clean"))
+
+pres_2024 <- pitc2024_all %>% 
+  left_join(
+    gp_simd %>% 
+      select(PracticeCode, GPPracticeName, PracticeListSize, SIMD_quintile),
+    by = c("GPPractice" = "PracticeCode")
+  ) %>% 
+  mutate(
+    year  = PaidDateMonth %/% 100,
+    month = PaidDateMonth %% 100
+  )
 ```
 
-## Methods
-Filtering Influzenza-related Drug:
-https://bnf.nice.org.uk/treatment-summaries/influenza/#related-drugs
+## Filtring Drugs
+Drugs were confirmed according to BNFCode.
+
 ```{r}
-flu_name <- regex("oseltamivir|tamiflu|zanamivir|relenza", ignore_case = TRUE)
-
-flu2019 <- pitc2019_all %>%
-  mutate(
-    year  = PaidDateMonth %/% 100,
-    month = PaidDateMonth %% 100
-  ) %>%
+mh_2024 <- pres_2024 %>% 
   filter(
-    str_starts(BNFItemCode, "050305") |
-      str_detect(BNFItemDescription, flu_name)
-  ) %>%
-  group_by(year, month)
-
-## 2020
-flu2020 <- pitc2020_all %>%
+    str_starts(BNFItemCode, "0401") | 
+    str_starts(BNFItemCode, "0402") |  
+    str_starts(BNFItemCode, "0403")    
+  ) %>% 
   mutate(
-    year  = PaidDateMonth %/% 100,
-    month = PaidDateMonth %% 100
-  ) %>%
-  filter(
-    str_starts(BNFItemCode, "050305") |
-      str_detect(BNFItemDescription, flu_name)
-  ) %>%
-  group_by(year, month) 
+    drug_class = case_when(
+      str_starts(BNFItemCode, "0401") ~ "Anxiolytics/Hypnotics",
+      str_starts(BNFItemCode, "0402") ~ "Antipsychotics",
+      str_starts(BNFItemCode, "0403") ~ "Antidepressants",
+      TRUE ~ "Other"
+    )
+  )
+```
 
-## 2021
-flu2021 <- pitc2021_all %>%
-  mutate(
-    year  = PaidDateMonth %/% 100,
-    month = PaidDateMonth %% 100
-  ) %>%
-  filter(
-    str_starts(BNFItemCode, "050305") |
-      str_detect(BNFItemDescription, flu_name)
-  ) %>%
-  group_by(year, month)
 
-## 2022
-flu2022 <- pitc2022_all %>%
+```{r}
+mh_rate_gp_2024 <- mh_2024 %>% 
+  group_by(GPPractice, GPPracticeName, SIMD_quintile) %>% 
+  summarise(
+    items = sum(NumberOfPaidItems, na.rm = TRUE),
+    list_size = first(PracticeListSize),
+    .groups = "drop"
+  ) %>% 
   mutate(
-    year  = PaidDateMonth %/% 100,
-    month = PaidDateMonth %% 100
-  ) %>%
-  filter(
-    str_starts(BNFItemCode, "050305") |
-      str_detect(BNFItemDescription, flu_name)
-  ) %>%
-  group_by(year, month)
-
-## 2023
-flu2023 <- pitc2023_all %>%
-  mutate(
-    year  = PaidDateMonth %/% 100,
-    month = PaidDateMonth %% 100
-  ) %>%
-  filter(
-    str_starts(BNFItemCode, "050305") |
-      str_detect(BNFItemDescription, flu_name)
-  ) %>%
-  group_by(year, month)
-
-## 2024
-flu2024 <- pitc2024_all %>%
-  mutate(
-    year  = PaidDateMonth %/% 100,
-    month = PaidDateMonth %% 100
-  ) %>%
-  filter(
-    str_starts(BNFItemCode, "050305") |
-      str_detect(BNFItemDescription, flu_name)
-  ) %>%
-  group_by(year, month)
+    rate_per_1000 = items / list_size * 1000
+  )
 
 ```
 
 
 ```{r}
-pitc_all <- bind_rows(
-   flu2019, flu2020, flu2021, flu2022, flu2023, flu2024
-) %>% 
-  arrange(year, month)
+mh_by_simd_2024 <- mh_rate_gp_2024 %>% 
+  group_by(SIMD_quintile) %>% 
+  summarise(
+    mean_rate   = mean(rate_per_1000, na.rm = TRUE),
+    median_rate = median(rate_per_1000, na.rm = TRUE),
+    sd_rate     = sd(rate_per_1000, na.rm = TRUE),
+    n_gp        = n(),
+    .groups     = "drop"
+  )
 
-flu_monthly <- pitc_all %>%
-  group_by(year, month) %>%
-  summarise(items = sum(NumberOfPaidItems, na.rm = TRUE), .groups = "drop") %>%
-  arrange(year, month)
+mh_by_simd_2024
+
 ```
 
-## Plots
-
+## Results 1
+In 2024, there was a clear socioeconomic gradient in mental health prescribing.
+GP practices located in the most deprived SIMD quintile had a mean of 2342 mental health prescriptions per 1000 registered patients, compared with 1384 per 1000 in the least deprived quintile.
+This represents an absolute difference of about 958 prescriptions per 1000 patients, meaning that practices in the most deprived areas prescribed mental health medicines at roughly 1.7 times the rate of those in the least deprived areas.
+# Plots
 ```{r}
-ggplot(flu_monthly, aes(x = month, y = items,
-                        group = year, colour = factor(year))) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2) +
-  scale_x_continuous(breaks = 1:12) +
-  facet_wrap(~ year, ncol = 2) +
+mh_rate_gp_2024_clean <- mh_rate_gp_2024 %>%
+  filter(!is.na(SIMD_quintile))
+
+ggplot(mh_rate_gp_2024_clean,
+       aes(x = factor(SIMD_quintile), y = rate_per_1000)) +
+  coord_cartesian(ylim = c(0, 5000)) +
+  geom_boxplot() +
   labs(
-    x = "Month",
-    y = "Paid items (national total)",
-    title = "Prescirptions of Influenza antivirals in Scotland (2019 - 2023)",
-    subtitle = "Oseltamivir/Tamiflu & Zanamivir/Relenza",
-    colour = "Year"
+    x = "SIMD quintile (1 = most deprived, 5 = least deprived)",
+    y = "Mental health prescriptions per 1000 patients (2024)",
+    title = "Mental health prescribing by socioeconomic deprivation",
+    subtitle = "GP practices in Scotland, 2024"
   ) +
-  theme_light()+
-  theme(plot.title = element_text(hjust = 0.5),
-plot.subtitle = element_text(hjust = 0.5))
+  theme_minimal() +
+  theme(
+    plot.title    = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5)
+  )
+```
+SIMD quintile was strongly associated with prescribing rate (β = −226.7 prescriptions per 1000 patients per quintile increase, p < 0.001).
+For each additional level of the SIMD quintile, the prescription rate decreases by approximately 227 prescriptions per 1000 patients on average.
+```{r}
+model_2024 <- lm(rate_per_1000 ~ SIMD_quintile, data = mh_rate_gp_2024)
+summary(model_2024)
 ```
