@@ -367,20 +367,9 @@ medications reflects socioeconomic inequalities, focusing on all GP
 practices in Scotland in 2024, and assesses whether prescribing rates
 differ across SIMD quintiles and whether a clear socioeconomic gradient
 is observable.</p>
-<pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-## ✔ dplyr     1.1.4     ✔ readr     2.1.5
-## ✔ forcats   1.0.0     ✔ stringr   1.5.2
-## ✔ ggplot2   4.0.0     ✔ tibble    3.3.0
-## ✔ lubridate 1.9.4     ✔ tidyr     1.3.1
-## ✔ purrr     1.1.0     
-## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ dplyr::filter() masks stats::filter()
-## ✖ dplyr::lag()    masks stats::lag()
-## ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
-<pre class="r"><code>library(here)</code></pre>
-<pre><code>## here() starts at /Users/wuye/Desktop/data_science/B229565</code></pre>
-<pre class="r"><code>library(stringr)</code></pre>
+<pre class="r"><code>library(tidyverse)
+library(here)
+library(stringr)</code></pre>
 </div>
 <div id="loading-data-set" class="section level2">
 <h2>Loading Data Set</h2>
@@ -397,32 +386,15 @@ pitc2024_all &lt;- map_dfr(files_2024, function(path) {
   pres %&gt;% mutate(DMDCode = as.character(DMDCode))
 })</code></pre>
 <p>SIMD Data Source: <a href="https://www.gov.scot/publications/scottish-index-of-multiple-deprivation-2020v2-postcode-look-up/" class="uri">https://www.gov.scot/publications/scottish-index-of-multiple-deprivation-2020v2-postcode-look-up/</a></p>
-<pre class="r"><code>GPlist_raw &lt;- read_csv(here(&quot;data&quot;,&quot;practice_contactdetails_oct2024-open-data.csv&quot;))</code></pre>
-<pre><code>## Rows: 888 Columns: 15
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: &quot;,&quot;
-## chr (12): GPPracticeName, AddressLine1, AddressLine2, AddressLine3, AddressL...
-## dbl  (2): PracticeCode, PracticeListSize
-## lgl  (1): Dispensing
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>gp_info &lt;- GPlist_raw %&gt;% 
+<pre class="r"><code>GPlist_raw &lt;- read_csv(here(&quot;data&quot;,&quot;practice_contactdetails_oct2024-open-data.csv&quot;))
+gp_info &lt;- GPlist_raw %&gt;% 
   select(PracticeCode, GPPracticeName, Postcode, PracticeListSize) %&gt;% 
   mutate(
     Postcode_clean = str_remove_all(Postcode, &quot; &quot;) %&gt;% str_to_upper()
   )
 
-simd_raw &lt;- read_csv(here(&quot;data&quot;, &quot;SIMD+2020v2+-+postcode+lookup+-+updated+2025.csv&quot;))</code></pre>
-<pre><code>## Rows: 227066 Columns: 6
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: &quot;,&quot;
-## chr (2): Postcode, DZ
-## dbl (4): SIMD2020_Rank, SIMD2020_Vigintile, SIMD2020_Decile, SIMD2020_Quintile
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>simd_info &lt;- simd_raw %&gt;% 
+simd_raw &lt;- read_csv(here(&quot;data&quot;, &quot;SIMD+2020v2+-+postcode+lookup+-+updated+2025.csv&quot;))
+simd_info &lt;- simd_raw %&gt;% 
   mutate(
     Postcode_clean = str_remove_all(Postcode, &quot; &quot;) %&gt;% str_to_upper()
   ) %&gt;% 
