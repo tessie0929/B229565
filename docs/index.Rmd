@@ -157,6 +157,7 @@ ggplot(mh_rate_gp_2024_clean,
     plot.subtitle = element_text(hjust = 0.5)
   )
 ```
+
 SIMD quintile was strongly associated with prescribing rate (β = −226.7 prescriptions per 1000 patients per quintile increase, p < 0.001).
 For each additional level of the SIMD quintile, the prescription rate decreases by approximately 227 prescriptions per 1000 patients on average.
 ```{r}
