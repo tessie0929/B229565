@@ -396,6 +396,7 @@ pitc2024_all &lt;- map_dfr(files_2024, function(path) {
   }
   pres %&gt;% mutate(DMDCode = as.character(DMDCode))
 })</code></pre>
+<p>SIMD Data Source: <a href="https://www.gov.scot/publications/scottish-index-of-multiple-deprivation-2020v2-postcode-look-up/" class="uri">https://www.gov.scot/publications/scottish-index-of-multiple-deprivation-2020v2-postcode-look-up/</a></p>
 <pre class="r"><code>GPlist_raw &lt;- read_csv(here(&quot;data&quot;,&quot;practice_contactdetails_oct2024-open-data.csv&quot;))</code></pre>
 <pre><code>## Rows: 888 Columns: 15
 ## ── Column specification ────────────────────────────────────────────────────────
