@@ -1,39 +1,163 @@
 ---
-title: "Assessment"
+title: "Changes in Influenza Antiviral Prescribing in Scotland throughout the COVID-19 Pandemic"
 output: html_document
-date: "2025-10-31"
+date: "2025-11-14"
 ---
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+## Introduction 
+The COVID-19 pandemic and its associated non-pharmaceutical interventions (NPIs) drastically altered the transmission dynamics of respiratory infections worldwide. Influenza incidence dropped to historically low levels in 2020–2021, largely due to social distancing, mask mandates, and travel restrictions. As normal social activity resumed, influenza activity rebounded in subsequent seasons. 
+Examining national community prescribing of influenza antivirals (oseltamivir, zanamivir) provides a population-level indicator of influenza burden. 
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-library(ggplot2)
-library(tidyverse)
-pressure %>% ggplot(aes(x = temperature, y = pressure))+
-  geom_point()+
-  theme_gray()
-
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+##Library
 
 ```{r}
-1+1
+library(tidyverse)
+library(here)
+library(stringr)
 ```
 
+## Loading Data Set
+
+```{r}
+load_year <- function(year) {
+  months <- sprintf("%02d", 1:12)
+  dfs <- vector("list", length(months))
+  
+  for (i in seq_along(months)) {
+    m <- months[i]
+    path <- here("data", year, paste0("pitc", year, m, ".csv"))
+    df <- read_csv(path, show_col_types = FALSE)
+
+    if (!"DMDCode" %in% names(df)) {
+      df <- df %>% mutate(DMDCode = NA_character_)
+    } else {
+      df <- df %>% mutate(DMDCode = as.character(DMDCode))
+    }
+    
+    dfs[[i]] <- df
+  }
+  bind_rows(dfs)
+}
+pitc2019_all <- load_year(2019)
+pitc2020_all <- load_year(2020)
+pitc2021_all <- load_year(2021)
+pitc2022_all <- load_year(2022)
+pitc2023_all <- load_year(2023)
+pitc2023_all <- pitc2023_all %>% select(-PrescribedType)
+pitc2024_all <- load_year(2024)
+```
+
+## Methods
+Filtering Influzenza-related Drug:
+https://bnf.nice.org.uk/treatment-summaries/influenza/#related-drugs
+```{r}
+flu_name <- regex("oseltamivir|tamiflu|zanamivir|relenza", ignore_case = TRUE)
+
+flu2019 <- pitc2019_all %>%
+  mutate(
+    year  = PaidDateMonth %/% 100,
+    month = PaidDateMonth %% 100
+  ) %>%
+  filter(
+    str_starts(BNFItemCode, "050305") |
+      str_detect(BNFItemDescription, flu_name)
+  ) %>%
+  group_by(year, month)
+
+## 2020
+flu2020 <- pitc2020_all %>%
+  mutate(
+    year  = PaidDateMonth %/% 100,
+    month = PaidDateMonth %% 100
+  ) %>%
+  filter(
+    str_starts(BNFItemCode, "050305") |
+      str_detect(BNFItemDescription, flu_name)
+  ) %>%
+  group_by(year, month) 
+
+## 2021
+flu2021 <- pitc2021_all %>%
+  mutate(
+    year  = PaidDateMonth %/% 100,
+    month = PaidDateMonth %% 100
+  ) %>%
+  filter(
+    str_starts(BNFItemCode, "050305") |
+      str_detect(BNFItemDescription, flu_name)
+  ) %>%
+  group_by(year, month)
+
+## 2022
+flu2022 <- pitc2022_all %>%
+  mutate(
+    year  = PaidDateMonth %/% 100,
+    month = PaidDateMonth %% 100
+  ) %>%
+  filter(
+    str_starts(BNFItemCode, "050305") |
+      str_detect(BNFItemDescription, flu_name)
+  ) %>%
+  group_by(year, month)
+
+## 2023
+flu2023 <- pitc2023_all %>%
+  mutate(
+    year  = PaidDateMonth %/% 100,
+    month = PaidDateMonth %% 100
+  ) %>%
+  filter(
+    str_starts(BNFItemCode, "050305") |
+      str_detect(BNFItemDescription, flu_name)
+  ) %>%
+  group_by(year, month)
+
+## 2024
+flu2024 <- pitc2024_all %>%
+  mutate(
+    year  = PaidDateMonth %/% 100,
+    month = PaidDateMonth %% 100
+  ) %>%
+  filter(
+    str_starts(BNFItemCode, "050305") |
+      str_detect(BNFItemDescription, flu_name)
+  ) %>%
+  group_by(year, month)
+
+```
+
+
+```{r}
+pitc_all <- bind_rows(
+   flu2019, flu2020, flu2021, flu2022, flu2023, flu2024
+) %>% 
+  arrange(year, month)
+
+flu_monthly <- pitc_all %>%
+  group_by(year, month) %>%
+  summarise(items = sum(NumberOfPaidItems, na.rm = TRUE), .groups = "drop") %>%
+  arrange(year, month)
+```
+
+## Plots
+
+```{r}
+ggplot(flu_monthly, aes(x = month, y = items,
+                        group = year, colour = factor(year))) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_continuous(breaks = 1:12) +
+  facet_wrap(~ year, ncol = 2) +
+  labs(
+    x = "Month",
+    y = "Paid items (national total)",
+    title = "Prescirptions of Influenza antivirals in Scotland (2019 - 2023)",
+    subtitle = "Oseltamivir/Tamiflu & Zanamivir/Relenza",
+    colour = "Year"
+  ) +
+  theme_light()+
+  theme(plot.title = element_text(hjust = 0.5),
+plot.subtitle = element_text(hjust = 0.5))
+```
