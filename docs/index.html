@@ -454,17 +454,7 @@ pres_joined &lt;- pitc2024_all %&gt;%
     sd_rate     = sd(rate_per_1000, na.rm = TRUE),
     n_gp        = n(),
     .groups     = &quot;drop&quot;
-  )
-
-mh_by_simd_2024</code></pre>
-<pre><code>## # A tibble: 5 × 5
-##   SIMD_quintile mean_rate median_rate sd_rate  n_gp
-##           &lt;dbl&gt;     &lt;dbl&gt;       &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;
-## 1             1     2342.       2237.   1011.   218
-## 2             2     2231.       2049.    961.   216
-## 3             3     1927.       1780.   1254.   194
-## 4             4     1799.       1763.    498.   151
-## 5             5     1384.       1328.    414.   109</code></pre>
+  )</code></pre>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>
@@ -505,24 +495,6 @@ rate decreases by approximately 227 prescriptions per 1000 patients on
 average.</p>
 <pre class="r"><code>model_2024 &lt;- lm(rate_per_1000 ~ SIMD_quintile, data = mh_rate_gp_2024)
 summary(model_2024)</code></pre>
-<pre><code>## 
-## Call:
-## lm(formula = rate_per_1000 ~ SIMD_quintile, data = mh_rate_gp_2024)
-## 
-## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -1818.4  -403.7  -115.1   268.7 14776.5 
-## 
-## Coefficients:
-##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)    2622.31      70.77  37.056   &lt;2e-16 ***
-## SIMD_quintile  -226.69      23.62  -9.597   &lt;2e-16 ***
-## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-## 
-## Residual standard error: 940.4 on 886 degrees of freedom
-## Multiple R-squared:  0.09416,    Adjusted R-squared:  0.09313 
-## F-statistic: 92.09 on 1 and 886 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 </div>
 

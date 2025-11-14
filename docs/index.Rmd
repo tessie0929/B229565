@@ -4,7 +4,7 @@ output: html_document
 date: "2025-11-14"
 ---
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
 ## Introduction
@@ -52,7 +52,6 @@ simd_info <- simd_raw %>%
     Postcode_clean,
     SIMD_quintile = SIMD2020_Quintile
   )
-
 ```
 # Join table
 ```{r}
@@ -73,7 +72,6 @@ pres_joined <- pitc2024_all %>%
 
 ## Filtering Drugs
 Drugs were confirmed according to BNFCode.
-
 ```{r}
 mh_2024 <- pres_joined %>% 
   filter(
@@ -118,9 +116,6 @@ mh_by_simd_2024 <- mh_rate_gp_2024 %>%
     n_gp        = n(),
     .groups     = "drop"
   )
-
-mh_by_simd_2024
-
 ```
 
 ## Results
@@ -152,7 +147,7 @@ ggplot(mh_rate_gp_2024,
 
 SIMD quintile was strongly associated with prescribing rate (β = −226.7 prescriptions per 1000 patients per quintile increase, p < 0.001).
 For each additional level of the SIMD quintile, the prescription rate decreases by approximately 227 prescriptions per 1000 patients on average.
-```{r}
+```{r results='hide'}
 model_2024 <- lm(rate_per_1000 ~ SIMD_quintile, data = mh_rate_gp_2024)
 summary(model_2024)
 ```
