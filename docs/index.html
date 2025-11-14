@@ -384,28 +384,19 @@ is observable.</p>
 </div>
 <div id="loading-data-set" class="section level2">
 <h2>Loading Data Set</h2>
-<pre class="r"><code>load_year &lt;- function(year) {
-  months &lt;- sprintf(&quot;%02d&quot;, 1:12) 
-  dfs &lt;- vector(&quot;list&quot;, length(months))
-  
-  for (i in seq_along(months)) {
-    m &lt;- months[i]
-    path &lt;- here(&quot;data&quot;, year, paste0(&quot;pitc&quot;, year, m, &quot;.csv&quot;))
-    df &lt;- read_csv(path, show_col_types = FALSE)
-
-    if (!&quot;DMDCode&quot; %in% names(df)) {
-      df &lt;- df %&gt;% mutate(DMDCode = NA_character_)
-    } else {
-      df &lt;- df %&gt;% mutate(DMDCode = as.character(DMDCode))
-    }
-    
-    dfs[[i]] &lt;- df
+<pre class="r"><code>files_2024 &lt;- list.files(
+  here(&quot;data&quot;, &quot;2024&quot;),
+  pattern = &quot;^pitc2024[0-9]{2}\\.csv$&quot;,
+  full.names = TRUE
+)
+pitc2024_all &lt;- map_dfr(files_2024, function(path) {
+  pres &lt;- read_csv(path, show_col_types = FALSE)
+  if (!&quot;DMDCode&quot; %in% names(pres)) {
+    pres &lt;- pres %&gt;% mutate(DMDCode = NA_character_)
   }
-  bind_rows(dfs)
-}</code></pre>
-<pre class="r"><code>pitc2024_all &lt;- load_year(2024)
-
-GPlist_2024 &lt;- read_csv(here(&quot;data&quot;,&quot;practice_contactdetails_oct2024-open-data.csv&quot;))</code></pre>
+  pres %&gt;% mutate(DMDCode = as.character(DMDCode))
+})</code></pre>
+<pre class="r"><code>GPlist_raw &lt;- read_csv(here(&quot;data&quot;,&quot;practice_contactdetails_oct2024-open-data.csv&quot;))</code></pre>
 <pre><code>## Rows: 888 Columns: 15
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -415,13 +406,13 @@ GPlist_2024 &lt;- read_csv(here(&quot;data&quot;,&quot;practice_contactdetails_o
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>gp_info &lt;- GPlist_2024 %&gt;% 
+<pre class="r"><code>gp_info &lt;- GPlist_raw %&gt;% 
   select(PracticeCode, GPPracticeName, Postcode, PracticeListSize) %&gt;% 
   mutate(
     Postcode_clean = str_remove_all(Postcode, &quot; &quot;) %&gt;% str_to_upper()
   )
 
-simd_pc &lt;- read_csv(here(&quot;data&quot;, &quot;SIMD+2020v2+-+postcode+lookup+-+updated+2025.csv&quot;))</code></pre>
+simd_raw &lt;- read_csv(here(&quot;data&quot;, &quot;SIMD+2020v2+-+postcode+lookup+-+updated+2025.csv&quot;))</code></pre>
 <pre><code>## Rows: 227066 Columns: 6
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -430,7 +421,7 @@ simd_pc &lt;- read_csv(here(&quot;data&quot;, &quot;SIMD+2020v2+-+postcode+looku
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>simd_info &lt;- simd_pc %&gt;% 
+<pre class="r"><code>simd_info &lt;- simd_raw %&gt;% 
   mutate(
     Postcode_clean = str_remove_all(Postcode, &quot; &quot;) %&gt;% str_to_upper()
   ) %&gt;% 
@@ -444,7 +435,7 @@ simd_pc &lt;- read_csv(here(&quot;data&quot;, &quot;SIMD+2020v2+-+postcode+looku
 <pre class="r"><code>gp_simd &lt;- gp_info %&gt;%
   left_join(simd_info, join_by(&quot;Postcode_clean&quot;))
 
-pres_2024 &lt;- pitc2024_all %&gt;% 
+pres_joined &lt;- pitc2024_all %&gt;% 
   left_join(
     gp_simd %&gt;% 
       select(PracticeCode, GPPracticeName, PracticeListSize, SIMD_quintile),
@@ -454,10 +445,10 @@ pres_2024 &lt;- pitc2024_all %&gt;%
     year  = PaidDateMonth %/% 100,
     month = PaidDateMonth %% 100
   )</code></pre>
-<div id="filtring-drugs" class="section level2">
-<h2>Filtring Drugs</h2>
+<div id="filtering-drugs" class="section level2">
+<h2>Filtering Drugs</h2>
 <p>Drugs were confirmed according to BNFCode.</p>
-<pre class="r"><code>mh_2024 &lt;- pres_2024 %&gt;% 
+<pre class="r"><code>mh_2024 &lt;- pres_joined %&gt;% 
   filter(
     str_starts(BNFItemCode, &quot;0401&quot;) | 
     str_starts(BNFItemCode, &quot;0402&quot;) |  
@@ -480,7 +471,8 @@ pres_2024 &lt;- pitc2024_all %&gt;%
   ) %&gt;% 
   mutate(
     rate_per_1000 = items / list_size * 1000
-  )</code></pre>
+  ) %&gt;%
+  filter(!is.na(SIMD_quintile))</code></pre>
 <pre class="r"><code>mh_by_simd_2024 &lt;- mh_rate_gp_2024 %&gt;% 
   group_by(SIMD_quintile) %&gt;% 
   summarise(
@@ -492,18 +484,17 @@ pres_2024 &lt;- pitc2024_all %&gt;%
   )
 
 mh_by_simd_2024</code></pre>
-<pre><code>## # A tibble: 6 × 5
+<pre><code>## # A tibble: 5 × 5
 ##   SIMD_quintile mean_rate median_rate sd_rate  n_gp
 ##           &lt;dbl&gt;     &lt;dbl&gt;       &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;
 ## 1             1     2342.       2237.   1011.   218
 ## 2             2     2231.       2049.    961.   216
 ## 3             3     1927.       1780.   1254.   194
 ## 4             4     1799.       1763.    498.   151
-## 5             5     1384.       1328.    414.   109
-## 6            NA      NaN          NA      NA    181</code></pre>
+## 5             5     1384.       1328.    414.   109</code></pre>
 </div>
-<div id="results-1" class="section level2">
-<h2>Results 1</h2>
+<div id="results" class="section level2">
+<h2>Results</h2>
 <p>In 2024, there was a clear socioeconomic gradient in mental health
 prescribing. GP practices located in the most deprived SIMD quintile had
 a mean of 2342 mental health prescriptions per 1000 registered patients,
@@ -518,7 +509,7 @@ least deprived areas.</p>
 <pre class="r"><code>mh_rate_gp_2024_clean &lt;- mh_rate_gp_2024 %&gt;%
   filter(!is.na(SIMD_quintile))
 
-ggplot(mh_rate_gp_2024_clean,
+ggplot(mh_rate_gp_2024,
        aes(x = factor(SIMD_quintile), y = rate_per_1000)) +
   coord_cartesian(ylim = c(0, 5000)) +
   geom_boxplot() +
@@ -557,7 +548,6 @@ summary(model_2024)</code></pre>
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Residual standard error: 940.4 on 886 degrees of freedom
-##   (181 observations deleted due to missingness)
 ## Multiple R-squared:  0.09416,    Adjusted R-squared:  0.09313 
 ## F-statistic: 92.09 on 1 and 886 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
