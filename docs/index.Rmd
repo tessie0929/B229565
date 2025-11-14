@@ -136,7 +136,8 @@ mh_by_simd_2024
 In 2024, there was a clear socioeconomic gradient in mental health prescribing.
 GP practices located in the most deprived SIMD quintile had a mean of 2342 mental health prescriptions per 1000 registered patients, compared with 1384 per 1000 in the least deprived quintile.
 This represents an absolute difference of about 958 prescriptions per 1000 patients, meaning that practices in the most deprived areas prescribed mental health medicines at roughly 1.7 times the rate of those in the least deprived areas.
-# Plots
+
+## Plots
 ```{r}
 mh_rate_gp_2024_clean <- mh_rate_gp_2024 %>%
   filter(!is.na(SIMD_quintile))
