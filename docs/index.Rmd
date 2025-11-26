@@ -4,7 +4,7 @@ output: html_document
 date: "2025-11-14"
 ---
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.align = "center", fig.width = 8, fig.height = 5)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.align = "center", fig.width = 8, fig.height = 5) 
 ```
 
 # Introduction
@@ -54,15 +54,9 @@ simd_info <- simd_raw %>%
 gp_simd <- gp_info %>%
   left_join(simd_info, join_by("Postcode_clean")) # attach SIMD_quintile to each GP using cleaned postcode
 pres_joined <- pitc2024_all %>% 
-  left_join(
-    gp_simd %>% 
-      select(PracticeCode, GPPracticeName, PracticeListSize, SIMD_quintile), 
-    by = c("GPPractice" = "PracticeCode")
-  ) %>% 
-  mutate(
-    year  = PaidDateMonth %/% 100, # extract calendar year from YYYYMM format
-    month = PaidDateMonth %% 100
-  )
+  left_join(gp_simd %>% 
+      select(PracticeCode, GPPracticeName, PracticeListSize, SIMD_quintile), by = c("GPPractice" = "PracticeCode")) %>% 
+  mutate(month = PaidDateMonth %% 100) # extract calendar month from YYYYMM format
 ```
 
 ### Filtering Drugs
@@ -78,8 +72,7 @@ mh_2024 <- pres_joined %>%
     drug_class = case_when(
       str_starts(BNFItemCode, "0401") ~ "Anxiolytics/Hypnotics", # classify by BNF code prefix
       str_starts(BNFItemCode, "0402") ~ "Antipsychotics",
-      str_starts(BNFItemCode, "0403") ~ "Antidepressants",
-      TRUE ~ "Other"
+      str_starts(BNFItemCode, "0403") ~ "Antidepressants"
     )
   )
 ```
@@ -99,20 +92,8 @@ mh_rate_gp_2024 <- mh_2024 %>%
 
 ```
 
-```{r}
-mh_by_simd_2024 <- mh_rate_gp_2024 %>% 
-  group_by(SIMD_quintile) %>% 
-  summarise(
-    mean_rate   = mean(rate_per_1000, na.rm = TRUE), # average prescribing rate per quintile
-    median_rate = median(rate_per_1000, na.rm = TRUE), # median rate (less sensitive to outliers)
-    sd_rate     = sd(rate_per_1000, na.rm = TRUE), # variability in rates within each quintile
-    n_gp        = n(), # number of GP practices in each quintile
-    .groups     = "drop"
-  )
-```
-
 # Results
-Mental health prescribing rates were analysed at GP practice level. For each practice, the total number of BNF 04.01, 04.02 and 04.03 items issued over 2024 was summed and divided by the registered list size to obtain a prescribing rate per 1000 patients. Descriptive statistics (mean, median, standard deviation and number of practices) were calculated within each SIMD quintile, and differences in distributions were visualised using boxplots. Monthly mean prescribing rates were then derived by aggregating practice-level rates within each SIMD quintile for every calendar month in 2024, allowing assessment of seasonal patterns and persistence of the deprivation gradient. Prescribing was also stratified by drug class (antidepressants, antipsychotics, anxiolytics/hypnotics) to examine whether similar socioeconomic patterns were present across different types of mental health medication. Finally, a Pearson correlation was computed between SIMD quintile (treated as an ordinal variable) and prescribing rate per 1000 patients to quantify the overall strength and direction of the association between socioeconomic deprivation and mental health prescribing.
+Mental health prescribing patterns in 2024 were examined across Scottish GP practices by linking community prescribing data with SIMD deprivation classifications. For each practice, annual counts of BNF 04.01, 04.02 and 04.03 items were aggregated and standardised by practice list size to produce prescribing rates per 1000 registered patients. These rates formed the basis of all subsequent analyses. Deprivation-related differences were first explored descriptively using boxplots, monthly trend lines, and drug-class–specific comparisons (Figures 1–3). To formally quantify these patterns, multiple statistical approaches were applied. A Kruskal–Wallis test assessed overall variation across the five SIMD quintiles, and Bonferroni-adjusted post-hoc Dunn tests identified which specific quintile pairs differed significantly. The persistence of socioeconomic inequalities throughout the year was evaluated by repeating Kruskal–Wallis tests for each month of 2024, while additional analyses stratified by drug class determined whether inequalities were consistent across antidepressants, antipsychotics, and anxiolytics/hypnotics. Finally, a Pearson correlation was used to estimate the overall linear association between prescribing rate and SIMD quintile. Together, this combination of descriptive visualisation and inferential testing provides a comprehensive assessment of how socioeconomic deprivation shaped mental health prescribing across Scottish primary care in 2024.
 
 ### Plots
 ```{r}
@@ -128,7 +109,7 @@ pink_palette <- c(
 ```{r}
 ggplot(mh_rate_gp_2024,
        aes(x = factor(SIMD_quintile), y = rate_per_1000, fill = factor(SIMD_quintile))) +
-  geom_boxplot(outlier.alpha = 0.3) + #Set the y-axis range to make the graph larger
+  geom_boxplot(outlier.alpha = 0.3) + 
   coord_cartesian(ylim = c(0, 5000)) + #Set the y-axis range to make the graph larger
   scale_fill_manual(
     values = pink_palette,
@@ -143,11 +124,9 @@ ggplot(mh_rate_gp_2024,
     subtitle = "GP practices in Scotland, 2024"
   ) +
   theme_classic() +
-  theme(
-    plot.title    = element_text(hjust = 0.5, face = "bold"),
-    plot.subtitle = element_text(hjust = 0.5),
-    legend.position = "none"
-  )
+  theme(plot.title    = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = "none")
 ```
 
 Figure 1.Overall prescribing differences across SIMD quintiles.
@@ -183,8 +162,8 @@ ggplot(mh_month_simd,
   scale_x_continuous(breaks = 1:12) +
   scale_colour_manual(
     values = pink_palette,
-    name   = "SIMD quintile",
-    labels = c("1 (most deprived)", "2", "3", "4", "5 (least deprived)")) +
+    name   = "SIMD quintile", # Legend name
+    labels = c("1 (most deprived)", "2", "3", "4", "5 (least deprived)")) + 
   labs(
     x = "Month (2024)",
     y = "Mean mental health prescriptions per 1000 patients",
@@ -192,7 +171,7 @@ ggplot(mh_month_simd,
     title = "Monthly mental health prescribing by deprivation level",
     subtitle = "Scottish GP practices in 2024"
   ) +
-  theme_light() +
+  theme_classic() +
   theme(
     plot.title    = element_text(hjust = 0.5),
     plot.subtitle = element_text(hjust = 0.5)
@@ -311,15 +290,15 @@ Future research should address these gaps by linking prescribing records with cl
 This analysis shows a clear and persistent socioeconomic gradient in mental health prescribing across Scottish GP practices, with markedly higher rates in the most deprived communities. The pattern is consistent across months and drug classes, and the statistical tests strongly support an association between deprivation and increased prescribing. These findings suggest that structural inequalities continue to shape both the burden of mental illness and the treatment patients receive. Although prescribing data cannot reveal underlying clinical need or access to alternative therapies, the results underline the importance of improving mental health support in deprived areas and addressing the broader social and economic conditions that contribute to poor mental health across Scotland.
 
 # References
-publichealthscotland.scot (2020). Psychological therapies waiting times - Quarter ending June 2020 - Psychological therapies waiting times - Publications - Public Health Scotland. [online] Available at: (https://publichealthscotland.scot/publications/psychological-therapies-waiting-times/psychological-therapies-waiting-times-quarter-ending-june-2020/).
+Public Health Scotland (2020). Psychological therapies waiting times - Quarter ending June 2020 - Psychological therapies waiting times - Publications - Public Health Scotland. [online] Available at: https://publichealthscotland.scot/publications/psychological-therapies-waiting-times/psychological-therapies-waiting-times-quarter-ending-june-2020/.
 
 Public Health Scotland (2021). Psychological therapies: Waiting times. Edinburgh: Public Health Scotland.
-Available at: (https://publichealthscotland.scot/publications/psychological-therapies-waiting-times/) (Accessed: 23 November 2025).
+Available at: https://publichealthscotland.scot/publications/psychological-therapies-waiting-times/ (Accessed: 23 November 2025).
 
 Public Health Scotland (2022). Mental health: Incidence and inequalities overview. Edinburgh: Public Health Scotland.
-Available at: (https://publichealthscotland.scot/our-areas-of-work/mental-health/) (Accessed: 23 November 2025).
+Available at: https://publichealthscotland.scot/our-areas-of-work/mental-health/ (Accessed: 23 November 2025).
 
-Tudor Hart, J. (1971). The Inverse Care Law. The Lancet, [online] 297(7696), pp.405–412. Available at: (doi:https://doi.org/10.1016/s0140-6736(71)92410-x).
+Tudor Hart, J. (1971). The Inverse Care Law. The Lancet, [online] 297(7696), pp.405–412. Available at: doi:https://doi.org/10.1016/s0140-6736(71)92410-x.
 
 World Health Organization (2014). Social Determinants of Mental Health. [online] www.who.int. Available at: https://www.who.int/publications/i/item/9789241506809.
 
