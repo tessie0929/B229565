@@ -15,6 +15,7 @@ This analysis uses national “Prescriptions in the Community” data for 2024 t
 library(tidyverse)
 library(here)
 library(stringr)
+library(plotly) # For interactive visualisation
 ```
 
 ### Loading Data Set
@@ -107,8 +108,8 @@ pink_palette <- c(
 ```
 
 ```{r}
-ggplot(mh_rate_gp_2024,
-       aes(x = factor(SIMD_quintile), y = rate_per_1000, fill = factor(SIMD_quintile))) +
+Figure1 <- ggplot(mh_rate_gp_2024,
+             aes(x = factor(SIMD_quintile), y = rate_per_1000, fill = factor(SIMD_quintile))) +
   geom_boxplot(outlier.alpha = 0.3) + 
   coord_cartesian(ylim = c(0, 5000)) + #Set the y-axis range to make the graph larger
   scale_fill_manual(
@@ -124,9 +125,12 @@ ggplot(mh_rate_gp_2024,
     subtitle = "GP practices in Scotland, 2024"
   ) +
   theme_classic() +
-  theme(plot.title    = element_text(hjust = 0.5, face = "bold"),
-        plot.subtitle = element_text(hjust = 0.5),
-        legend.position = "none")
+  theme(
+    plot.title    = element_text(hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.position = "none"
+  )
+ggplotly(Figure1) # ggplotly for interactive plot
 ```
 
 Figure 1.Overall prescribing differences across SIMD quintiles.
@@ -153,17 +157,17 @@ mh_month_simd <- mh_2024 %>%
 ```
 
 ```{r}
-ggplot(mh_month_simd,
-       aes(x = month, y = mean_rate,
-           colour = factor(SIMD_quintile),
-           group  = SIMD_quintile)) +
+Figure2 <- ggplot(mh_month_simd,
+             aes(x = month, y = mean_rate,
+                 colour = factor(SIMD_quintile),
+                 group  = SIMD_quintile)) +
   geom_line(linewidth = 1) +
   geom_point(size = 2) +
   scale_x_continuous(breaks = 1:12) +
   scale_colour_manual(
     values = pink_palette,
-    name   = "SIMD quintile", # Legend name
-    labels = c("1 (most deprived)", "2", "3", "4", "5 (least deprived)")) + 
+    name   = "SIMD quintile",
+    labels = c("1 (most deprived)", "2", "3", "4", "5 (least deprived)")) +
   labs(
     x = "Month (2024)",
     y = "Mean mental health prescriptions per 1000 patients",
@@ -176,12 +180,14 @@ ggplot(mh_month_simd,
     plot.title    = element_text(hjust = 0.5),
     plot.subtitle = element_text(hjust = 0.5)
   )
+ggplotly(Figure2)
 ```
 
 Figure 2. Monthly prescribing patterns and persistence of the deprivation gradient.
 When mental health prescribing was examined month-by-month, a clear seasonal pattern emerged:
 rates were generally higher in winter (October, December, January) and lower in summer.
 However, despite seasonal fluctuations, the ranking of SIMD quintiles remained consistent throughout the year. Q1 was the highest in every month, Q5 was the lowest in every month, and Q2–Q4 remained in order between them. Importantly, the lines for different SIMD quintiles never crossed, demonstrating that socioeconomic differences in prescribing were persistent year-round, not limited to specific seasonal peaks. 
+
 ```{r}
 mh_rate_byclass <- mh_2024 %>% 
   group_by(GPPractice, GPPracticeName, SIMD_quintile, drug_class) %>% 
