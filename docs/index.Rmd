@@ -90,7 +90,6 @@ mh_rate_gp_2024 <- mh_2024 %>%
     rate_per_1000 = items / list_size * 1000 #prescribing rate per 1000 registrated patients
   ) %>%
   filter(!is.na(SIMD_quintile)) # keep only practices with a SIMD quintile
-
 ```
 
 # Results
